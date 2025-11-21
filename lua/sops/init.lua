@@ -141,13 +141,23 @@ function M.encrypt_buffer(bufnr)
   -- Get file format
   local format = utils.get_file_format(bufnr)
   
-  -- Get the filename for in-place encryption
+  -- Get the filename - needed for SOPS to match against .sops.yaml rules
   local filename = vim.api.nvim_buf_get_name(bufnr)
   
+  if filename == '' then
+    vim.notify('Cannot encrypt unnamed buffer. Save the file first.', vim.log.levels.ERROR)
+    error('SOPS encryption failed: unnamed buffer')
+  end
+  
   -- Encrypt the content
-  -- We use --input-type and --output-type with /dev/stdin instead of in-place
-  -- because we want to update the buffer, not the file directly
-  local success, result = utils.execute_sops({ '--encrypt', '--input-type', format, '--output-type', format, '/dev/stdin' }, decrypted_content)
+  -- Use --filename-override so SOPS can match against .sops.yaml rules even when using stdin
+  local success, result = utils.execute_sops({ 
+    '--encrypt', 
+    '--filename-override', filename,
+    '--input-type', format, 
+    '--output-type', format, 
+    '/dev/stdin' 
+  }, decrypted_content)
   
   if success then
     -- Split the result into lines and update the buffer
