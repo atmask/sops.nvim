@@ -6,8 +6,10 @@ A Neovim plugin for transparent encryption and decryption of [SOPS](https://gith
 
 - **Transparent Decryption**: Automatically decrypts SOPS-encrypted YAML and JSON files when opened
 - **Automatic Re-encryption**: Re-encrypts files on save, maintaining encryption keys and metadata
+- **Manual Mode**: Optional commands and keybindings for manual encrypt/decrypt operations
 - **Graceful Error Handling**: Shows error messages without preventing file access if decryption fails
-- **Zero Configuration**: Works out of the box with no configuration needed
+- **Configurable**: Enable/disable automatic operations as needed
+- **Zero Configuration**: Works out of the box with sensible defaults
 
 ## Requirements
 
@@ -19,10 +21,27 @@ A Neovim plugin for transparent encryption and decryption of [SOPS](https://gith
 
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
+**Default configuration (automatic mode):**
 ```lua
 {
   'atmask/nvim_sops',
   ft = { 'yaml', 'json' },  -- Lazy load on YAML/JSON files
+}
+```
+
+**Custom configuration (manual mode with keybindings):**
+```lua
+{
+  'atmask/nvim_sops',
+  ft = { 'yaml', 'json' },
+  opts = {
+    auto_decrypt = false,
+    auto_encrypt = false,
+  },
+  keys = {
+    { '<leader>sd', '<cmd>SopsDecrypt<cr>', desc = 'Decrypt SOPS file' },
+    { '<leader>se', '<cmd>SopsEncrypt<cr>', desc = 'Encrypt SOPS file' },
+  },
 }
 ```
 
@@ -49,16 +68,41 @@ Clone this repository into your Neovim plugin directory:
 git clone https://github.com/atmask/nvim_sops.git ~/.local/share/nvim/site/pack/plugins/start/nvim_sops
 ```
 
+## Configuration
+
+By default, the plugin automatically decrypts files when opened and re-encrypts them when saved. You can customize this behavior using the `setup()` function:
+
+```lua
+require('nvim_sops').setup({
+  -- Enable automatic decryption when opening files (default: true)
+  auto_decrypt = true,
+  -- Enable automatic encryption when saving files (default: true)
+  auto_encrypt = true,
+})
+```
+
+### Disabling Automatic Operations
+
+If you prefer manual control, disable automatic operations and use commands/keybindings instead:
+
+```lua
+require('nvim_sops').setup({
+  auto_decrypt = false,
+  auto_encrypt = false,
+})
+```
+
 ## Usage
 
-Once installed, the plugin works automatically:
+### Automatic Mode (Default)
+
+With default settings, the plugin works transparently:
 
 1. **Opening Files**: When you open a `.yaml`, `.yml`, or `.json` file that contains SOPS metadata, it will be automatically decrypted
 2. **Editing**: Edit the decrypted content as you normally would
 3. **Saving**: When you save the file, it will be automatically re-encrypted with the same keys
 
-### Example Workflow
-
+**Example Workflow:**
 ```bash
 # Create a new SOPS-encrypted file
 sops secrets.yaml
@@ -67,6 +111,40 @@ sops secrets.yaml
 nvim secrets.yaml
 
 # Edit the content, then save - it will be automatically re-encrypted
+:w
+```
+
+### Manual Mode
+
+When automatic operations are disabled, use commands or keybindings:
+
+**Commands:**
+- `:SopsDecrypt` - Decrypt the current buffer
+- `:SopsEncrypt` - Encrypt the current buffer
+
+**Example Keybindings:**
+```lua
+-- Add to your Neovim config
+vim.keymap.set('n', '<leader>sd', '<cmd>SopsDecrypt<cr>', { desc = 'Decrypt SOPS file' })
+vim.keymap.set('n', '<leader>se', '<cmd>SopsEncrypt<cr>', { desc = 'Encrypt SOPS file' })
+```
+
+**Manual Workflow:**
+```bash
+# Open an encrypted file
+nvim secrets.yaml
+
+# Decrypt it manually
+:SopsDecrypt
+# or use keybinding: <leader>sd
+
+# Edit the content
+
+# Encrypt it manually before saving
+:SopsEncrypt
+# or use keybinding: <leader>se
+
+# Save the file
 :w
 ```
 

@@ -4,6 +4,26 @@ local utils = require('nvim_sops.utils')
 
 local M = {}
 
+-- Default configuration
+M.config = {
+  -- Enable automatic decryption when opening files
+  auto_decrypt = true,
+  -- Enable automatic encryption when saving files
+  auto_encrypt = true,
+}
+
+--- Setup function to configure the plugin
+---@param opts table|nil Configuration options
+function M.setup(opts)
+  M.config = vim.tbl_deep_extend('force', M.config, opts or {})
+end
+
+--- Manually decrypt the current buffer (for use with keybindings)
+function M.decrypt()
+  local bufnr = vim.api.nvim_get_current_buf()
+  M.decrypt_buffer(bufnr)
+end
+
 --- Decrypt a buffer if it contains SOPS-encrypted content
 ---@param bufnr number Buffer number
 function M.decrypt_buffer(bufnr)
@@ -51,6 +71,23 @@ function M.decrypt_buffer(bufnr)
     -- Decryption failed - keep encrypted content and show error
     vim.notify('Failed to decrypt SOPS file: ' .. result, vim.log.levels.ERROR)
   end
+end
+
+--- Manually encrypt the current buffer (for use with keybindings)
+function M.encrypt()
+  local bufnr = vim.api.nvim_get_current_buf()
+  
+  -- For manual encryption, we need to handle the case where the file wasn't originally encrypted
+  -- Check if the file has SOPS metadata already, or mark it as needing encryption
+  if not utils.is_sops_file(bufnr) then
+    vim.notify('This file does not have SOPS metadata. Use sops command to initialize it first.', vim.log.levels.WARN)
+    return
+  end
+  
+  -- Mark as encrypted so encrypt_buffer will process it
+  vim.api.nvim_buf_set_var(bufnr, 'is_sops_encrypted', true)
+  
+  M.encrypt_buffer(bufnr)
 end
 
 --- Encrypt a buffer before saving if it was originally encrypted
