@@ -104,9 +104,11 @@ end
 function M.encrypt()
   local bufnr = vim.api.nvim_get_current_buf()
   
-  -- For manual encryption, we need to handle the case where the file wasn't originally encrypted
-  -- Check if the file has SOPS metadata already, or mark it as needing encryption
-  if not utils.is_sops_file(bufnr) then
+  -- Check if this buffer was previously decrypted (marked with is_sops_encrypted)
+  local ok, is_encrypted = pcall(vim.api.nvim_buf_get_var, bufnr, 'is_sops_encrypted')
+  
+  -- If not already marked as encrypted, check if the file has SOPS metadata
+  if not (ok and is_encrypted) and not utils.is_sops_file(bufnr) then
     vim.notify('This file does not have SOPS metadata. Use sops command to initialize it first.', vim.log.levels.WARN)
     return
   end
